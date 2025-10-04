@@ -19,9 +19,35 @@ You can see examples of graphs which use this layout engine on [cola.js](https:/
 
 ## Installation
 
+**Standard installation** (with Cython extensions for best performance):
 ```bash
-uv pip install pycola
+pip install pycola
 ```
+
+**With optional scipy integration** (for even faster shortest paths):
+```bash
+pip install pycola[fast]
+```
+
+**Development installation**:
+```bash
+# Clone repository
+git clone https://github.com/shakfu/pycola.git
+cd pycola
+
+# Install with uv (recommended)
+uv sync
+
+# Or with pip
+pip install -e .
+```
+
+**Note**: Pre-built wheels with Cython extensions are available for:
+- Linux (x86_64, aarch64)
+- macOS (x86_64, arm64)
+- Windows (amd64)
+
+If you're on a different platform, the package will automatically fall back to pure Python (slower but functional).
 
 ## Development Setup
 
@@ -543,19 +569,35 @@ Test statistics:
 
 ## Performance
 
-**Current performance** (after NumPy vectorization optimization):
-- Small graphs (20 nodes): ~0.03s
-- Medium graphs (100 nodes): ~0.2s
-- Large graphs (500 nodes): ~5.6s
+**Current performance** (with Cython extensions - v0.1.2):
+- Small graphs (20 nodes): ~0.02s (**85x faster** than v0.1.0)
+- Medium graphs (100 nodes): ~0.05s (**80x faster** than v0.1.0)
+- Large graphs (500 nodes): ~1.1s (**105x faster** than v0.1.0)
+
+**Performance evolution**:
+- v0.1.0 (baseline): Pure Python - 115.8s for 500 nodes
+- v0.1.1 (vectorization): NumPy optimizations - 5.6s for 500 nodes (21x faster)
+- v0.1.2 (Cython): Compiled extensions - 1.1s for 500 nodes (105x faster)
 
 **Optimizations**:
-- Vectorized gradient descent with NumPy broadcasting (20-170x faster)
+- **Cython-compiled shortest paths** - Dijkstra's algorithm compiled to C (5x speedup)
+- **Vectorized gradient descent** - NumPy broadcasting for derivative computation (20-170x speedup)
+- **Priority cascade**: Cython → scipy (optional) → pure Python fallback
 - Efficient matrix operations for O(n²) computations
 - Runge-Kutta integration for gradient descent
 - Spatial indexing with red-black trees
 - Optimized VPSC constraint solver
 
-See `docs/PERFORMANCE_COMPARISON.md` for detailed benchmarks.
+**Installation for best performance**:
+```bash
+# Standard (Cython extensions)
+pip install pycola
+
+# With scipy (optional, slightly faster for large graphs)
+pip install pycola[fast]
+```
+
+See `docs/PERFORMANCE_COMPARISON.md` and `docs/OPTIMIZATION_ANALYSIS.md` for detailed benchmarks.
 
 ## Architecture
 

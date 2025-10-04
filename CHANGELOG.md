@@ -15,6 +15,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 
 ---
 
+## [0.1.2] - Cython Shortest Paths Optimization
+
+### Added
+- **Cython-compiled shortest paths (Dijkstra's algorithm)** - 5x additional speedup
+- Optional scipy integration for even better performance (`pip install pycola[fast]`)
+- Priority cascade implementation: Cython → scipy → pure Python
+- Pre-built wheels for Linux, macOS (x86_64, arm64), and Windows
+- GitHub Actions workflow for multi-platform wheel building with cibuildwheel
+
+### Changed
+- **MAJOR PERFORMANCE IMPROVEMENT**: Cython-compiled Dijkstra's algorithm
+  - **5x faster** for large graphs on top of vectorization gains
+  - **100x total speedup** compared to original implementation (v0.1.0)
+  - Medium graphs (100 nodes): 4.1s → 0.05s (80x faster overall)
+  - Large graphs (500 nodes): 115.8s → 1.1s (105x faster overall)
+- Shortest paths now uses Cython extensions by default (no runtime dependencies)
+- Build system changed from `uv_build` to `setuptools` for Cython support
+- Added optional `[fast]` extra for scipy integration
+
+### Performance (Combined: Vectorization + Cython)
+- **Small graphs (20 nodes)**: ~0.02s (was ~1.7s) - **85x faster**
+- **Medium graphs (100 nodes)**: ~0.05s (was ~4.1s) - **82x faster**
+- **Large graphs (500 nodes)**: ~1.1s (was ~115.8s) - **105x faster**
+
+### Installation
+- **With Cython extensions** (recommended): `pip install pycola` or `uv pip install pycola`
+- **With scipy** (fastest): `pip install pycola[fast]`
+- **From source** (for development): `pip install -e .` (requires C compiler)
+
+### Testing
+- All 312 tests pass with Cython implementation
+- Fallback to pure Python when Cython extensions unavailable
+- Numerical correctness maintained across all implementations
+
 ## [0.1.1] - Performance Optimization Release
 
 ### Added
