@@ -5,6 +5,8 @@ This module provides utility functions for grid-based layouts and
 power graph layouts with edge routing.
 """
 
+from __future__ import annotations
+
 from typing import Any, Callable
 from .layout import Layout, Node, Link
 from .gridrouter import GridRouter

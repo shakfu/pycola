@@ -5,6 +5,8 @@ This module provides geometry primitives, convex hull calculation,
 tangent computation, and visibility graph construction.
 """
 
+from __future__ import annotations
+
 from typing import Callable, Optional
 import math
 

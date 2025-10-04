@@ -5,6 +5,8 @@ This module implements a constraint solver for maintaining separation constraint
 between variables while minimizing a quadratic cost function.
 """
 
+from __future__ import annotations
+
 from typing import Callable, Optional
 import math
 

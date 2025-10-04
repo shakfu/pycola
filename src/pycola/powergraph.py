@@ -5,6 +5,8 @@ This module implements hierarchical graph clustering using greedy merging
 based on edge intersection patterns.
 """
 
+from __future__ import annotations
+
 from typing import Any, TypeVar, Generic, Optional
 from .linklengths import LinkAccessor
 

@@ -5,6 +5,8 @@ This module provides efficient all-pairs shortest path calculation
 using Dijkstra's algorithm with a pairing heap priority queue.
 """
 
+from __future__ import annotations
+
 from typing import Generic, TypeVar, Callable, Optional
 from .pqueue import PriorityQueue, PairingHeap
 

@@ -4,6 +4,8 @@
 This module extends the force-directed layout to 3D space.
 """
 
+from __future__ import annotations
+
 from typing import Optional
 import numpy as np
 import math

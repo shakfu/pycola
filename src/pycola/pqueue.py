@@ -5,6 +5,8 @@ This module provides a pairing heap-based priority queue with decrease-key suppo
 which is essential for efficient Dijkstra's algorithm implementation.
 """
 
+from __future__ import annotations
+
 from typing import Callable, Generic, Optional, TypeVar
 
 T = TypeVar("T")

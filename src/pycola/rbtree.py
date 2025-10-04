@@ -5,6 +5,8 @@ This provides just the interface needed by rectangle.py without implementing
 a full Red-Black Tree from scratch.
 """
 
+from __future__ import annotations
+
 from typing import Generic, TypeVar, Callable, Optional
 from sortedcontainers import SortedList
 

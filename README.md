@@ -4,6 +4,8 @@ PyCola is a Python port of [WebCola](https://github.com/tgdwyer/WebCola), a cons
 
 This is my second port of an adaptagrams library, the first being [pyhola](https://github.com/shakfu/pyhola), which is a pybind11 wrapper for the adaptagrams HOLA graph layout algorithm.
 
+You can see examples of graphs which use this layout engine on [cola.js](https://ialab.it.monash.edu/webcola/).
+
 ## Features
 
 - **Force-Directed Layout** - 2D and 3D graph layouts using gradient descent
@@ -48,7 +50,7 @@ make clean         # Clean artifacts
 
 **Direct commands:**
 ```bash
-uv run pytest                                      # Run tests
+uv run pytest                                     # Run tests
 uv run pytest --cov=src/pycola --cov-report=html  # Coverage
 uv run mypy src/pycola                            # Type check
 uv run ruff format src/pycola tests               # Format
@@ -539,12 +541,21 @@ Test statistics:
 - **100% pass rate**
 - Comprehensive coverage of algorithms and edge cases
 
-## Performance Notes
+## Performance
 
-- Uses NumPy for efficient matrix operations
-- Gradient descent with Runge-Kutta integration
+**Current performance** (after NumPy vectorization optimization):
+- Small graphs (20 nodes): ~0.03s
+- Medium graphs (100 nodes): ~0.2s
+- Large graphs (500 nodes): ~5.6s
+
+**Optimizations**:
+- Vectorized gradient descent with NumPy broadcasting (20-170x faster)
+- Efficient matrix operations for O(n²) computations
+- Runge-Kutta integration for gradient descent
 - Spatial indexing with red-black trees
-- Optimized constraint projection with VPSC solver
+- Optimized VPSC constraint solver
+
+See `docs/PERFORMANCE_COMPARISON.md` for detailed benchmarks.
 
 ## Architecture
 

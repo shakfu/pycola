@@ -5,6 +5,8 @@ This module provides utilities for computing link lengths based on graph
 structure and generating constraints for directed graphs.
 """
 
+from __future__ import annotations
+
 from typing import Generic, TypeVar, Callable, Literal, Optional, Any
 import math
 

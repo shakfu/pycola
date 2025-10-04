@@ -12,6 +12,8 @@ This module implements the Layout class which provides:
 - Disconnected graph handling
 """
 
+from __future__ import annotations
+
 from typing import Optional, Callable, Union, Any, Literal, TypedDict
 from enum import IntEnum
 import numpy as np

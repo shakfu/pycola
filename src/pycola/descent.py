@@ -5,6 +5,8 @@ This module implements gradient descent with Runge-Kutta integration
 to minimize stress in graph layouts with ideal edge lengths.
 """
 
+from __future__ import annotations
+
 from typing import Optional, Callable
 import numpy as np
 import math
@@ -175,6 +177,8 @@ class Descent:
         """
         Compute first and second derivatives, storing results in self.g and self.H.
 
+        Vectorized implementation using NumPy broadcasting for performance.
+
         Args:
             x: Current positions (k x n)
         """
@@ -182,68 +186,88 @@ class Descent:
         if n < 1:
             return
 
-        # Distance vectors
-        d = np.zeros(self.k)
-        d2 = np.zeros(self.k)
-        Huu = np.zeros(self.k)
-        max_h = 0.0
+        # Compute all pairwise differences using broadcasting
+        # Shape: (k, n, n) where diff[:, u, v] = x[:, u] - x[:, v]
+        diff = x[:, :, np.newaxis] - x[:, np.newaxis, :]  # (k, n, n)
 
-        # Across all nodes u
-        for u in range(n):
-            # Zero gradient and hessian diagonals
-            Huu[:] = 0
-            self.g[:, u] = 0
+        # Squared differences per dimension: (k, n, n)
+        diff_squared = diff ** 2
 
-            # Across all nodes v
-            for v in range(n):
-                if u == v:
-                    continue
+        # Sum over dimensions to get squared distances: (n, n)
+        dist_squared = np.sum(diff_squared, axis=0)
 
-                # Compute distance vector and randomly displace coincident nodes
-                max_displaces = n
-                distance_squared = 0.0
-                while max_displaces > 0:
-                    max_displaces -= 1
-                    distance_squared = 0.0
-                    for i in range(self.k):
-                        dx = x[i, u] - x[i, v]
-                        d[i] = dx
-                        d2[i] = dx * dx
-                        distance_squared += d2[i]
-                    if distance_squared > 1e-9:
-                        break
-                    # Displace v randomly
-                    rd = self.offset_dir()
-                    x[:, v] += rd
+        # Create mask for diagonal (self-pairs) and near-zero distances
+        diagonal_mask = np.eye(n, dtype=bool)
+        min_dist_sq = 1e-9
 
-                distance = math.sqrt(distance_squared)
-                ideal_distance = self.D[u, v]
+        # Distances: (n, n)
+        # Add small epsilon to avoid sqrt(0), but we'll mask diagonal later
+        distances = np.sqrt(np.maximum(dist_squared, min_dist_sq))
 
-                # Get weight from G matrix
-                weight = 1.0 if self.G is None else self.G[u, v]
+        # Get weights from G matrix
+        if self.G is None:
+            weights = np.ones((n, n))
+        else:
+            weights = self.G.copy()
 
-                # Ignore long range attractions for non-connected nodes (P-stress)
-                if (weight > 1 and distance > ideal_distance) or not math.isfinite(ideal_distance):
-                    self.H[:, u, v] = 0
-                    continue
+        # Normalize weights > 1 to 1.0 (they were just indicators)
+        # But first, use them to filter P-stress
+        # Ignore long range attractions: weight > 1 and distance > ideal
+        p_stress_mask = (weights > 1) & (distances > self.D)
+        weights = np.where(weights > 1, 1.0, weights)
 
-                # weight > 1 was just an indicator
-                if weight > 1:
-                    weight = 1.0
+        # Filter out diagonal, non-finite ideal distances, and P-stress cases
+        valid_mask = ~diagonal_mask & np.isfinite(self.D) & ~p_stress_mask
 
-                ideal_dist_squared = ideal_distance * ideal_distance
-                gs = 2 * weight * (distance - ideal_distance) / (ideal_dist_squared * distance)
-                distance_cubed = distance_squared * distance
-                hs = 2 * -weight / (ideal_dist_squared * distance_cubed)
+        # Ideal distances
+        ideal_dist = np.where(valid_mask, self.D, 1.0)  # Use 1.0 as safe default
+        ideal_dist_sq = ideal_dist ** 2
 
-                for i in range(self.k):
-                    self.g[i, u] += d[i] * gs
-                    self.H[i, u, v] = hs * (2 * distance_cubed + ideal_distance * (d2[i] - distance_squared))
-                    Huu[i] -= self.H[i, u, v]
+        # Safe distances for division (use 1.0 where invalid to avoid div-by-zero)
+        safe_distances = np.where(valid_mask, distances, 1.0)
+        safe_dist_sq = np.where(valid_mask, dist_squared, 1.0)
+        safe_dist_cubed = safe_dist_sq * safe_distances
 
-            for i in range(self.k):
-                self.H[i, u, u] = Huu[i]
-                max_h = max(max_h, Huu[i])
+        # Gradient scalar: gs = 2 * weight * (distance - ideal) / (ideal^2 * distance)
+        # Shape: (n, n)
+        gs = np.where(
+            valid_mask,
+            2 * weights * (safe_distances - ideal_dist) / (ideal_dist_sq * safe_distances),
+            0.0
+        )
+
+        # Hessian scalar: hs = -2 * weight / (ideal^2 * distance^3)
+        hs = np.where(
+            valid_mask,
+            -2 * weights / (ideal_dist_sq * safe_dist_cubed),
+            0.0
+        )
+
+        # Compute gradients: sum over all v for each u
+        # g[i, u] = sum_v(diff[i, u, v] * gs[u, v])
+        # Broadcasting: diff (k, n, n) * gs (n, n) -> (k, n, n), then sum over v
+        self.g = np.sum(diff * gs[np.newaxis, :, :], axis=2)  # (k, n)
+
+        # Compute Hessian off-diagonal elements
+        # H[i, u, v] = hs[u, v] * (2 * dist^3 + ideal * (diff^2[i] - dist^2))
+        # Shape: (k, n, n)
+        hessian_term = (2 * safe_dist_cubed[np.newaxis, :, :] +
+                        ideal_dist[np.newaxis, :, :] * (diff_squared - safe_dist_sq[np.newaxis, :, :]))
+        self.H = np.where(
+            valid_mask[np.newaxis, :, :],
+            hs[np.newaxis, :, :] * hessian_term,
+            0.0
+        )
+
+        # Compute diagonal elements: Huu[i] = -sum_v(H[i, u, v])
+        Huu = -np.sum(self.H, axis=2)  # (k, n)
+
+        # Set diagonal elements
+        for i in range(self.k):
+            np.fill_diagonal(self.H[i], Huu[i])
+
+        # Max Hessian value for scaling locks and grid snap
+        max_h = np.max(np.abs(Huu)) if Huu.size > 0 else 0.0
 
         # Grid snap forces
         r = self.snap_grid_size / 2

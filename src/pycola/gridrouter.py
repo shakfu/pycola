@@ -5,6 +5,8 @@ This module provides algorithms for routing edges on a grid structure,
 avoiding obstacles and minimizing crossings.
 """
 
+from __future__ import annotations
+
 from typing import TypeVar, Generic, Protocol, Optional, Callable
 import math
 

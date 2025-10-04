@@ -5,6 +5,8 @@ This module provides utilities for separating disconnected components
 and packing them efficiently in the layout space.
 """
 
+from __future__ import annotations
+
 from typing import Any, Optional
 import math
 
